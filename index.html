@@ -1,62 +1,61 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home Boonyarat | Smart Home</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { font-family: sans-serif; background: #07140e; color: #effff7; margin: 0; padding: 20px; }
-    .card { background: #10251b; padding: 20px; border-radius: 14px; border: 1px solid #28513d; margin-bottom: 20px; }
-    .device { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #28513d; }
-    .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: #19c37d; }
-    .btn.off { background: #42594c; }
-  </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #07140e; color: #fffff7; margin: 0; padding: 20px; }
+        .card { background: #10251b; padding: 20px; border-radius: 14px; border: 1px solid #28513d; margin-bottom: 20px; }
+        .device { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #28513d; }
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: #19c37d; }
+        .btn.off { background: #42594c; }
+    </style>
 </head>
 <body>
-  <h1>🏠 Home Boonyarat</h1>
-  <div id="dashboard">
-    <div class="card">
-      <h3>สถานะเซนเซอร์</h3>
-      <p id="sensor-data">กำลังโหลด...</p>
-    </div>
-    <div class="card" id="device-list">
-      <h3>อุปกรณ์</h3>
-      <!-- อุปกรณ์จะถูกโหลดมาแสดงที่นี่ -->
-    </div>
-  </div>
-
-  <script>
-    const SUPABASE_URL = "https://zwsjrcfvmvwqnptnpvuz.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_3ECnZB6bgFE2M0MOAN3IAw_J9RB8w1X";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    async function loadData() {
-      // โหลดข้อมูลอุปกรณ์
-      const { data: devices } = await supabase.from('devices').select('*, device_states(is_on)');
-      const list = document.getElementById('device-list');
-      list.innerHTML = devices.map(d => `
-        <div class="device">
-          <span>${d.icon} ${d.name}</span>
-          <button class="btn ${d.device_states[0]?.is_on ? '' : 'off'}" onclick="toggle('${d.id}', ${d.device_states[0]?.is_on})">
-            ${d.device_states[0]?.is_on ? 'เปิดอยู่' : 'ปิดอยู่'}
-          </button>
+    <h1>🏠 Home Boonyarat</h1>
+    <div id="dashboard">
+        <div class="card">
+            <h3>สถานะเซนเซอร์</h3>
+            <p id="sensor-data">กำลังโหลด...</p>
         </div>
-      `).join('');
+        <div class="card" id="device-list">
+            <h3>อุปกรณ์</h3>
+        </div>
+    </div>
 
-      // โหลดเซนเซอร์
-      const { data: sensors } = await supabase.from('sensor_readings').select('*').limit(1).single();
-      document.getElementById('sensor-data').innerText = `🌡️ ${sensors.temperature}°C | 💧 ${sensors.humidity}%`;
-    }
+    <script>
+        // --- ใส่ค่าของคุณตรงนี้ ---
+        const SUPABASE_URL = "https://zwsjrcfvmvwqnptnpvuz.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_3ECnZB6bgFE2M0MOAN3IAw_J9RB8w1X";
+        // -----------------------
 
-    async function toggle(id, currentState) {
-      await supabase.from('device_states').update({ is_on: !currentState }).eq('device_id', id);
-      loadData();
-    }
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    loadData();
-    // ฟังการเปลี่ยนแปลงแบบ Realtime
-    supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'device_states' }, loadData).subscribe();
-  </script>
+        async function loadData() {
+            // โหลดอุปกรณ์
+            const { data: devices } = await supabase.from('devices').select('*, device_states(is_on)');
+            const list = document.getElementById('device-list');
+            list.innerHTML = '<h3>อุปกรณ์</h3>' + devices.map(d => `
+                <div class="device">
+                    <span>${d.icon} ${d.name}</span>
+                    <button class="btn ${d.device_states[0]?.is_on ? '' : 'off'}" onclick="toggle('${d.id}', ${d.device_states[0]?.is_on})">
+                        ${d.device_states[0]?.is_on ? 'เปิดอยู่' : 'ปิดอยู่'}
+                    </button>
+                </div>
+            `).join('');
+
+            // โหลดเซนเซอร์
+            const { data: sensors } = await supabase.from('sensor_readings').select('*').limit(1).single();
+            document.getElementById('sensor-data').innerText = `🌡️ ${sensors.temperature}°C | 💧 ${sensors.humidity}%`;
+        }
+
+        async function toggle(id, currentState) {
+            await supabase.from('device_states').update({ is_on: !currentState }).eq('device_id', id);
+            loadData();
+        }
+
+        loadData();
+        // รีเฟรชข้อมูลอัตโนมัติเมื่อมีการเปลี่ยนแปลงในฐานข้อมูล
+        supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'device_states' }, loadData).subscribe();
+    </script>
 </body>
 </html>
