@@ -4,160 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home Boonyarat | Smart Home</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      color: #effff7;
-      background: #07140e;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 8%;
-      background: #0d2118;
-      border-bottom: 1px solid #28513d;
-    }
-    h1 { margin: 0; font-size: 24px; }
-    .online {
-      color: #77f2b4;
-      background: #123a27;
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-size: 14px;
-    }
-    main {
-      max-width: 1100px;
-      margin: auto;
-      padding: 32px 20px;
-    }
-    .subtitle { color: #a9c4b5; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 16px;
-      margin: 26px 0;
-    }
-    .card {
-      padding: 20px;
-      border: 1px solid #28513d;
-      border-radius: 14px;
-      background: #10251b;
-    }
-    .label { color: #a9c4b5; font-size: 14px; }
-    .value { margin-top: 10px; font-size: 30px; font-weight: bold; }
-    .devices {
-      padding: 20px;
-      border: 1px solid #28513d;
-      border-radius: 14px;
-      background: #10251b;
-    }
-    .device {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 0;
-      border-bottom: 1px solid #28513d;
-    }
-    .device:last-child { border-bottom: 0; }
-    .device-name { font-weight: bold; }
-    .room { color: #a9c4b5; margin-top: 4px; font-size: 13px; }
-    button {
-      border: 0;
-      border-radius: 8px;
-      padding: 9px 14px;
-      background: #19c37d;
-      color: #042014;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button.off { background: #42594c; color: white; }
+    body { font-family: sans-serif; background: #07140e; color: #effff7; margin: 0; padding: 20px; }
+    .card { background: #10251b; padding: 20px; border-radius: 14px; border: 1px solid #28513d; margin-bottom: 20px; }
+    .device { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #28513d; }
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: #19c37d; }
+    .btn.off { background: #42594c; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🏠 Home Boonyarat</h1>
-    <div class="online">● Dashboard Online</div>
-  </header>
-
-  <main>
-    <h2>Smart Home Dashboard</h2>
-    <p class="subtitle">ภาพรวมสถานะอุปกรณ์ภายในบ้าน</p>
-
-    <section class="grid">
-      <div class="card">
-        <div class="label">อุปกรณ์ทั้งหมด</div>
-        <div class="value">4</div>
-      </div>
-      <div class="card">
-        <div class="label">อุปกรณ์ที่เปิดอยู่</div>
-        <div class="value" id="active-count">2</div>
-      </div>
-      <div class="card">
-        <div class="label">อุณหภูมิ</div>
-        <div class="value">28.5°C</div>
-      </div>
-      <div class="card">
-        <div class="label">ความชื้น</div>
-        <div class="value">63%</div>
-      </div>
-    </section>
-
-    <section class="devices">
-      <h2>อุปกรณ์ในบ้าน</h2>
-
-      <div class="device">
-        <div>
-          <div class="device-name">💡 ไฟห้องนั่งเล่น</div>
-          <div class="room">Living Room</div>
-        </div>
-        <button onclick="toggleDevice(this)">เปิดอยู่</button>
-      </div>
-
-      <div class="device">
-        <div>
-          <div class="device-name">🌀 พัดลมห้องนั่งเล่น</div>
-          <div class="room">Living Room</div>
-        </div>
-        <button class="off" onclick="toggleDevice(this)">ปิดอยู่</button>
-      </div>
-
-      <div class="device">
-        <div>
-          <div class="device-name">🔒 ประตูหน้าบ้าน</div>
-          <div class="room">Entrance</div>
-        </div>
-        <button onclick="toggleDevice(this)">ล็อกอยู่</button>
-      </div>
-
-      <div class="device">
-        <div>
-          <div class="device-name">🛏️ ไฟห้องนอน</div>
-          <div class="room">Bedroom</div>
-        </div>
-        <button class="off" onclick="toggleDevice(this)">ปิดอยู่</button>
-      </div>
-    </section>
-  </main>
+  <h1>🏠 Home Boonyarat</h1>
+  <div id="dashboard">
+    <div class="card">
+      <h3>สถานะเซนเซอร์</h3>
+      <p id="sensor-data">กำลังโหลด...</p>
+    </div>
+    <div class="card" id="device-list">
+      <h3>อุปกรณ์</h3>
+      <!-- อุปกรณ์จะถูกโหลดมาแสดงที่นี่ -->
+    </div>
+  </div>
 
   <script>
-    function toggleDevice(button) {
-      const isOff = button.classList.contains("off");
+    const SUPABASE_URL = "ใส่_YOUR_PROJECT_URL_ที่นี่";
+    const SUPABASE_KEY = "ใส่_YOUR_ANON_KEY_ที่นี่";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      if (isOff) {
-        button.classList.remove("off");
-        button.textContent = "เปิดอยู่";
-      } else {
-        button.classList.add("off");
-        button.textContent = "ปิดอยู่";
-      }
+    async function loadData() {
+      // โหลดข้อมูลอุปกรณ์
+      const { data: devices } = await supabase.from('devices').select('*, device_states(is_on)');
+      const list = document.getElementById('device-list');
+      list.innerHTML = devices.map(d => `
+        <div class="device">
+          <span>${d.icon} ${d.name}</span>
+          <button class="btn ${d.device_states[0]?.is_on ? '' : 'off'}" onclick="toggle('${d.id}', ${d.device_states[0]?.is_on})">
+            ${d.device_states[0]?.is_on ? 'เปิดอยู่' : 'ปิดอยู่'}
+          </button>
+        </div>
+      `).join('');
 
-      const active = document.querySelectorAll("button:not(.off)").length;
-      document.getElementById("active-count").textContent = active;
+      // โหลดเซนเซอร์
+      const { data: sensors } = await supabase.from('sensor_readings').select('*').limit(1).single();
+      document.getElementById('sensor-data').innerText = `🌡️ ${sensors.temperature}°C | 💧 ${sensors.humidity}%`;
     }
+
+    async function toggle(id, currentState) {
+      await supabase.from('device_states').update({ is_on: !currentState }).eq('device_id', id);
+      loadData();
+    }
+
+    loadData();
+    // ฟังการเปลี่ยนแปลงแบบ Realtime
+    supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'device_states' }, loadData).subscribe();
   </script>
 </body>
 </html>
