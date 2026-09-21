@@ -1,70 +1,62 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: sans-serif; background: #07140e; color: #fffff7; margin: 0; padding: 20px; }
-        .card { background: #10251b; padding: 20px; border-radius: 14px; border: 1px solid #28513d; margin-bottom: 20px; }
-        .device { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #28513d; }
-        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: #19c37d; color: white; }
-        .btn.off { background: #42594c; }
-    </style>
-</head>
-<body>
-    <h1>🏠 Home Boonyarat</h1>
-    <div id="dashboard">
-        <div class="card">
-            <h3>สถานะเซนเซอร์</h3>
-            <p id="sensor-data">กำลังโหลด...</p>
+import { supabase } from '@/lib/supabase'
+
+export const revalidate = 0;
+
+export default async function Home() {
+  const { data: sensorData } = await supabase
+    .from('sensor_readings')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  return (
+    <main className="p-6 bg-[#0B1120] min-h-screen text-white font-sans">
+      {/* ส่วนหัว */}
+      <header className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold">สวัสดีครับ</h1>
+          <p className="text-gray-400">บ้านของคุณ ปลอดภัย และสะดวกสบายเสมอ</p>
         </div>
-        <div class="card" id="device-list">
-            <h3>อุปกรณ์</h3>
+        <div className="text-right">
+          <p className="font-bold">21 ก.ย. 2569 | 12:45</p>
+          <p className="text-sm text-gray-400">27°C กรุงเทพฯ</p>
         </div>
+      </header>
+
+      {/* Top Stats - 4 Cards */}
+      <section className="grid grid-cols-4 gap-4 mb-6">
+        <StatCard title="อุณหภูมิภายในบ้าน" value={`${sensorData?.temperature ?? 0}°C`} sub="ปกติ" color="bg-blue-900/40" />
+        <StatCard title="ความชื้น" value={`${sensorData?.humidity ?? 0}%`} sub="ปกติ" color="bg-teal-900/40" />
+        <StatCard title="PM2.5" value={`${sensorData?.pm25 ?? 0} µg/m³`} sub="ดีมาก" color="bg-purple-900/40" />
+        <StatCard title="กำลังไฟรวม" value="4.8 kW" sub="วันนี้ 12.6 kWh" color="bg-orange-900/40" />
+      </section>
+
+      {/* Security Banner */}
+      <div className="bg-emerald-900/30 p-4 rounded-2xl mb-6 border border-emerald-800 flex justify-between">
+        <span className="font-bold">✅ ระบบรักษาความปลอดภัย</span>
+        <span>กล้อง 4 ตัว | เซ็นเซอร์ 8 ตัว | ประตู/หน้าต่าง 6 จุด</span>
+      </div>
+
+      {/* Main Content Grid */}
+      <section className="grid grid-cols-3 gap-6">
+        <div className="col-span-2 space-y-6">
+            <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800 h-64">สถานะห้อง / พื้นที่ (จำลอง Layout)</div>
+            <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800 h-64">กราฟการใช้พลังงานไฟฟ้า</div>
+        </div>
+        <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800">กล้องวงจรปิด</div>
+      </section>
+    </main>
+  )
+}
+
+// คอมโพเนนต์ย่อยสำหรับ Card
+function StatCard({ title, value, sub, color }: any) {
+  return (
+    <div className={`${color} p-5 rounded-3xl border border-white/10`}>
+      <p className="text-gray-300 text-sm">{title}</p>
+      <p className="text-3xl font-bold mt-1">{value}</p>
+      <p className="text-xs text-emerald-400 mt-2">{sub}</p>
     </div>
-
-    <script>
-        // --- ใส่ค่าของคุณตรงนี้ ---
-        const SUPABASE_URL = "https://zwsjrcfvmvwqnptnpvuz.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_3ECnZB6bgFE2M0MOAN3IAw_J9RB8w1X";
-        // -----------------------
-
-        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        async function loadData() {
-            try {
-                // โหลดอุปกรณ์
-                const { data: devices } = await sb.from('devices').select('*, device_states(is_on)');
-                const list = document.getElementById('device-list');
-                if (devices) {
-                    list.innerHTML = '<h3>อุปกรณ์</h3>' + devices.map(d => `
-                        <div class="device">
-                            <span>${d.name}</span>
-                            <button class="btn ${d.device_states[0]?.is_on ? '' : 'off'}" onclick="toggle('${d.id}', ${d.device_states[0]?.is_on})">
-                                ${d.device_states[0]?.is_on ? 'เปิดอยู่' : 'ปิดอยู่'}
-                            </button>
-                        </div>
-                    `).join('');
-                }
-
-                // โหลดเซนเซอร์
-                const { data: sensors } = await sb.from('sensor_readings').select('*').limit(1).single();
-                if (sensors) {
-                    document.getElementById('sensor-data').innerText = `🌡️ ${sensors.temperature}°C | 💧 ${sensors.humidity}%`;
-                }
-            } catch (err) {
-                console.error("Error loading data:", err);
-            }
-        }
-
-        async function toggle(id, currentState) {
-            await sb.from('device_states').update({ is_on: !currentState }).eq('device_id', id);
-            loadData();
-        }
-
-        loadData();
-        
-        // การเชื่อมต่อ Realtime
-        sb.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'device_states' }, loadData).subscribe();
-    </script>
-</body>
-</html>
+  )
+}
