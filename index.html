@@ -6,7 +6,7 @@
         body { font-family: sans-serif; background: #07140e; color: #fffff7; margin: 0; padding: 20px; }
         .card { background: #10251b; padding: 20px; border-radius: 14px; border: 1px solid #28513d; margin-bottom: 20px; }
         .device { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #28513d; }
-        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: #19c37d; }
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: #19c37d; color: white; }
         .btn.off { background: #42594c; }
     </style>
 </head>
@@ -28,34 +28,43 @@
         const SUPABASE_KEY = "sb_publishable_3ECnZB6bgFE2M0MOAN3IAw_J9RB8w1X";
         // -----------------------
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function loadData() {
-            // โหลดอุปกรณ์
-            const { data: devices } = await supabase.from('devices').select('*, device_states(is_on)');
-            const list = document.getElementById('device-list');
-            list.innerHTML = '<h3>อุปกรณ์</h3>' + devices.map(d => `
-                <div class="device">
-                    <span>${d.icon} ${d.name}</span>
-                    <button class="btn ${d.device_states[0]?.is_on ? '' : 'off'}" onclick="toggle('${d.id}', ${d.device_states[0]?.is_on})">
-                        ${d.device_states[0]?.is_on ? 'เปิดอยู่' : 'ปิดอยู่'}
-                    </button>
-                </div>
-            `).join('');
+            try {
+                // โหลดอุปกรณ์
+                const { data: devices } = await sb.from('devices').select('*, device_states(is_on)');
+                const list = document.getElementById('device-list');
+                if (devices) {
+                    list.innerHTML = '<h3>อุปกรณ์</h3>' + devices.map(d => `
+                        <div class="device">
+                            <span>${d.name}</span>
+                            <button class="btn ${d.device_states[0]?.is_on ? '' : 'off'}" onclick="toggle('${d.id}', ${d.device_states[0]?.is_on})">
+                                ${d.device_states[0]?.is_on ? 'เปิดอยู่' : 'ปิดอยู่'}
+                            </button>
+                        </div>
+                    `).join('');
+                }
 
-            // โหลดเซนเซอร์
-            const { data: sensors } = await supabase.from('sensor_readings').select('*').limit(1).single();
-            document.getElementById('sensor-data').innerText = `🌡️ ${sensors.temperature}°C | 💧 ${sensors.humidity}%`;
+                // โหลดเซนเซอร์
+                const { data: sensors } = await sb.from('sensor_readings').select('*').limit(1).single();
+                if (sensors) {
+                    document.getElementById('sensor-data').innerText = `🌡️ ${sensors.temperature}°C | 💧 ${sensors.humidity}%`;
+                }
+            } catch (err) {
+                console.error("Error loading data:", err);
+            }
         }
 
         async function toggle(id, currentState) {
-            await supabase.from('device_states').update({ is_on: !currentState }).eq('device_id', id);
+            await sb.from('device_states').update({ is_on: !currentState }).eq('device_id', id);
             loadData();
         }
 
         loadData();
-        // รีเฟรชข้อมูลอัตโนมัติเมื่อมีการเปลี่ยนแปลงในฐานข้อมูล
-        supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'device_states' }, loadData).subscribe();
+        
+        // การเชื่อมต่อ Realtime
+        sb.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'device_states' }, loadData).subscribe();
     </script>
 </body>
 </html>
