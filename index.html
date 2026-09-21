@@ -29,7 +29,7 @@
   <script>
     const SUPABASE_URL = "https://zwsjrcfvmvwqnptnpvuz.supabase.co";
     const SUPABASE_KEY = "sb_publishable_3ECnZB6bgFE2M0MOAN3IAw_J9RB8w1X";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function loadData() {
       // โหลดข้อมูลอุปกรณ์
